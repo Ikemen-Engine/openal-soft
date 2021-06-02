@@ -1212,7 +1212,11 @@ endif()
 if(NOT WIN32)
     set(LIBNAME "openal")
 else()
-    set(LIBNAME "OpenAL32")
+    if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+        set(LIBNAME "SoftOpenAL32")
+    else()
+        set(LIBNAME "SoftOpenAL64")
+    endif()
 endif()
 
 # Needed for openal.pc.in
@@ -1386,14 +1390,25 @@ if(WIN32 AND MINGW AND ALSOFT_BUILD_IMPORT_LIB AND NOT LIBTYPE STREQUAL "STATIC"
             message(STATUS "WARNING: Cannot find dlltool, disabling .def/.lib generation")
         endif()
     else()
-        set_property(TARGET OpenAL APPEND_STRING PROPERTY
-            LINK_FLAGS " -Wl,--output-def,OpenAL32.def")
-        add_custom_command(TARGET OpenAL POST_BUILD
-            COMMAND "${SED_EXECUTABLE}" -i -e "s/ @[^ ]*//" OpenAL32.def
-            COMMAND "${CMAKE_DLLTOOL}" -d OpenAL32.def -l OpenAL32.lib -D OpenAL32.dll
-            COMMENT "Stripping ordinals from OpenAL32.def and generating OpenAL32.lib..."
-            VERBATIM
-        )
+        if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+            set_property(TARGET OpenAL APPEND_STRING PROPERTY
+                LINK_FLAGS " -Wl,--output-def,SoftOpenAL32.def")
+            add_custom_command(TARGET OpenAL POST_BUILD
+                COMMAND "${SED_EXECUTABLE}" -i -e "s/ @[^ ]*//" SoftOpenAL32.def
+                COMMAND "${CMAKE_DLLTOOL}" -d SoftOpenAL32.def -l SoftOpenAL32.lib -D SoftOpenAL32.dll
+                COMMENT "Stripping ordinals from OpenAL32.def and generating OpenAL32.lib..."
+                VERBATIM
+            )
+        else()
+            set_property(TARGET OpenAL APPEND_STRING PROPERTY
+                LINK_FLAGS " -Wl,--output-def,SoftOpenAL64.def")
+            add_custom_command(TARGET OpenAL POST_BUILD
+                COMMAND "${SED_EXECUTABLE}" -i -e "s/ @[^ ]*//" SoftOpenAL64.def
+                COMMAND "${CMAKE_DLLTOOL}" -d SoftOpenAL64.def -l SoftOpenAL64.lib -D SoftOpenAL64.dll
+                COMMENT "Stripping ordinals from SoftOpenAL64.def and generating SoftOpenAL64.lib..."
+                VERBATIM
+            )
+        endif()
     endif()
 endif()
 
